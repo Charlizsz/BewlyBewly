@@ -1,14 +1,23 @@
 <script setup lang="ts">
-import type { Ref } from 'vue'
 import { onKeyStroke } from '@vueuse/core'
+import type { Ref } from 'vue'
 import { useToast } from 'vue-toastification'
-import { Type as ThreePointV2Type } from '~/models/video/appForYou'
-import type { AppForYouResult, Item as AppVideoItem, ThreePointV2 } from '~/models/video/appForYou'
-import type { Item as VideoItem, forYouResult } from '~/models/video/forYou'
+
+import Button from '~/components/Button.vue'
+import Dialog from '~/components/Dialog.vue'
+import Empty from '~/components/Empty.vue'
+import Loading from '~/components/Loading.vue'
+import VideoCard from '~/components/VideoCard/VideoCard.vue'
+import VideoCardSkeleton from '~/components/VideoCard/VideoCardSkeleton.vue'
+import { useApiClient } from '~/composables/api'
+import { useBewlyApp } from '~/composables/useAppProvider'
+import { LanguageType } from '~/enums/appEnums'
 import type { GridLayout } from '~/logic'
 import { accessKey, settings } from '~/logic'
-import { LanguageType } from '~/enums/appEnums'
-import { TVAppKey, getTvSign } from '~/utils/authProvider'
+import type { AppForYouResult, Item as AppVideoItem, ThreePointV2 } from '~/models/video/appForYou'
+import { Type as ThreePointV2Type } from '~/models/video/appForYou'
+import type { forYouResult, Item as VideoItem } from '~/models/video/forYou'
+import { getTvSign, TVAppKey } from '~/utils/authProvider'
 import { isVerticalVideo } from '~/utils/uriParse'
 
 const props = defineProps<{
@@ -181,7 +190,7 @@ async function getAppRecommendVideos() {
     const response: AppForYouResult = await api.video.getAppRecommendVideos({
       access_key: accessKey.value,
       s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
-      c_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
+      c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
       appkey: TVAppKey.appkey,
       idx: appVideoList.length > 0 ? appVideoList[appVideoList.length - 1].idx : 1,
     })
@@ -287,7 +296,7 @@ function handleAppDislike() {
   const params = {
     access_key: accessKey.value,
     goto: activatedAppVideo.value?.goto,
-    id: activatedAppVideo.value?.param,
+    id: Number(activatedAppVideo.value?.param),
     // https://github.com/magicdawn/bilibili-app-recommend/blob/cb51f75f415f48235ce048537f2013122c16b56b/src/components/VideoCard/card.service.ts#L115
     idx: (Date.now() / 1000).toFixed(0),
     reason_id: selectedDislikeReason.value,
@@ -322,9 +331,9 @@ function handleAppUndoDislike(video: AppVideoItem) {
   const params = {
     access_key: accessKey.value,
     goto: video.goto,
-    id: video.param,
+    id: Number(video.param),
     // https://github.com/magicdawn/bilibili-app-recommend/blob/cb51f75f415f48235ce048537f2013122c16b56b/src/components/VideoCard/card.service.ts#L115
-    idx: (Date.now() / 1000).toFixed(0),
+    idx: Number((Date.now() / 1000).toFixed(0)),
     reason_id: selectedDislikeReason.value, // 1 means dislike, e.g. {"id": 1, "name": "不感兴趣","toast": "将减少相似内容推荐"}
     build: 74800100,
     device: 'pad',
@@ -436,7 +445,7 @@ defineExpose({ initData })
             </div>
             {{ reason.name }}
           </div>
-          <line-md:confirm v-if="selectedDislikeReason === reason.id" />
+          <div v-if="selectedDislikeReason === reason.id" i-line-md:confirm />
         </li>
       </ul>
     </Dialog>

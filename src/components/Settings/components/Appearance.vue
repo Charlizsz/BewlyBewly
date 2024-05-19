@@ -1,8 +1,17 @@
 <script lang="ts" setup>
+import { useThrottleFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
+
+import Input from '~/components/Input.vue'
+import Radio from '~/components/Radio.vue'
+import Select from '~/components/Select.vue'
+import Slider from '~/components/Slider.vue'
+import Tooltip from '~/components/Tooltip.vue'
+import { WALLPAPERS } from '~/constants/imgs'
 import { settings } from '~/logic'
 
-const { wallpapers, getBewlyImage } = useBewlyImage()
+import SettingsItem from './SettingsItem.vue'
+import SettingsItemGroup from './SettingsItemGroup.vue'
 
 const { t } = useI18n()
 
@@ -54,6 +63,7 @@ watch(() => settings.value.wallpaper, (newValue) => {
 function changeThemeColor(color: string) {
   settings.value.themeColor = color
 }
+const changeThemeColorThrottle = useThrottleFn((color: string) => changeThemeColor(color), 100)
 
 function changeWallpaper(url: string) {
   // If you had already set the wallpaper, it enables the wallpaper masking to prevent text hard to see
@@ -96,13 +106,16 @@ function changeWallpaper(url: string) {
               boxShadow: isCustomColor ? '0 0 0 1px var(--bew-border-color), var(--bew-shadow-1)' : 'none',
             }"
           >
-            <mingcute:color-picker-line pos="absolute" text-white w-12px h-12px pointer-events-none />
+            <div
+              i-mingcute:color-picker-line pos="absolute" text-white w-12px h-12px
+              pointer-events-none
+            />
             <input
               :value="settings.themeColor"
               type="color"
               w-30px h-30px p-0 m-0 block
               shrink-0 rounded-8 border-none cursor-pointer
-              @input="(e) => changeThemeColor((e.target as HTMLInputElement)?.value)"
+              @input="(e) => changeThemeColorThrottle((e.target as HTMLInputElement)?.value)"
             >
           </div>
         </div>
@@ -144,16 +157,16 @@ function changeWallpaper(url: string) {
             :class="{ 'selected-wallpaper': settings.wallpaper === '' }"
             @click="changeWallpaper('')"
           >
-            <tabler:photo-off text="3xl $bew-text-3" />
+            <div i-tabler:photo-off text="3xl $bew-text-3" />
           </picture>
-          <Tooltip v-for="item in wallpapers" :key="item.url" placement="top" :content="item.name" aspect-video>
+          <Tooltip v-for="item in WALLPAPERS" :key="item.url" placement="top" :content="item.name" aspect-video>
             <picture
               aspect-video bg="$bew-fill-1" rounded="$bew-radius" overflow-hidden
               un-border="4 transparent" w-full
               :class="{ 'selected-wallpaper': settings.wallpaper === item.url }"
               @click="changeWallpaper(item.url)"
             >
-              <img :src="getBewlyImage(item.thumbnail)" alt="" w-full h-full object-cover>
+              <img :src="item.thumbnail" alt="" w-full h-full object-cover>
             </picture>
           </Tooltip>
         </div>
@@ -166,7 +179,7 @@ function changeWallpaper(url: string) {
             w="xl:1/5 lg:1/4 md:1/3"
           >
             <img
-              v-if="settings.wallpaper" :src="getBewlyImage(settings.wallpaper)" alt="" loading="lazy"
+              v-if="settings.wallpaper" :src="settings.wallpaper" alt="" loading="lazy"
               w-full h-full object-cover
               onerror="this.style.display='none'; this.onerror=null;"
             >

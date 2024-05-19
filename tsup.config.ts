@@ -1,4 +1,5 @@
 import { defineConfig } from 'tsup'
+
 import { isDev, isFirefox, isSafari } from './scripts/utils'
 
 export default defineConfig(() => ({

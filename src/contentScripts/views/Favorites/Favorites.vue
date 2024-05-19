@@ -1,11 +1,21 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
-import { getCSRF, getUserID, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
+
+import Button from '~/components/Button.vue'
+import Empty from '~/components/Empty.vue'
+import Input from '~/components/Input.vue'
+import Loading from '~/components/Loading.vue'
+import Select from '~/components/Select.vue'
+import Tooltip from '~/components/Tooltip.vue'
 import type { FavoriteCategory, FavoriteResource } from '~/components/TopBar/types'
-import emitter from '~/utils/mitt'
+import VideoCard from '~/components/VideoCard/VideoCard.vue'
+import { useApiClient } from '~/composables/api'
+import { useBewlyApp } from '~/composables/useAppProvider'
 import { settings } from '~/logic'
-import type { Media as FavoriteItem, FavoritesResult } from '~/models/video/favorite'
-import type { List as CategoryItem, FavoritesCategoryResult } from '~/models/video/favoriteCategory'
+import type { FavoritesResult, Media as FavoriteItem } from '~/models/video/favorite'
+import type { FavoritesCategoryResult, List as CategoryItem } from '~/models/video/favoriteCategory'
+import { getCSRF, getUserID, openLinkToNewTab, removeHttpFromUrl } from '~/utils/main'
+import emitter from '~/utils/mitt'
 
 const { t } = useI18n()
 const api = useApiClient()
@@ -185,7 +195,7 @@ function isMusic(item: FavoriteResource) {
         <Input v-model="keyword" w-250px @enter="handleSearch" />
         <Button type="primary" @click="handleSearch">
           <template #left>
-            <tabler:search />
+            <div i-tabler:search />
           </template>
         </Button>
         <!-- <h3
@@ -226,7 +236,7 @@ function isMusic(item: FavoriteResource) {
                   @click.prevent="handleUnfavorite(item)"
                 >
                   <Tooltip :content="$t('favorites.unfavorite')" placement="bottom" type="dark">
-                    <ic-baseline-clear />
+                    <div i-ic-baseline-clear />
                   </Tooltip>
                 </button>
               </template>
@@ -258,7 +268,7 @@ function isMusic(item: FavoriteResource) {
           z--1
         >
           <div
-            absolute w-full h-full backdrop-blur-40px
+            absolute w-full h-full backdrop-blur-40px transform-gpu
             bg="$bew-fill-4"
           />
           <img
@@ -290,7 +300,7 @@ function isMusic(item: FavoriteResource) {
             @click="handlePlayAll"
           >
             <template #left>
-              <tabler:player-play />
+              <div i-tabler:player-play />
             </template>
             {{ t('common.play_all') }}
           </Button>

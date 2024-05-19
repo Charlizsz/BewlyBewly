@@ -1,16 +1,18 @@
 <script setup lang="ts">
-import { Icon } from '@iconify/vue'
-import type { GridLayoutIcon } from './types'
-import { HomeSubPage } from './types'
-import emitter from '~/utils/mitt'
+import Logo from '~/components/Logo.vue'
+import SearchBar from '~/components/SearchBar/SearchBar.vue'
+import { useBewlyApp } from '~/composables/useAppProvider'
 import { homePageGridLayout, settings } from '~/logic'
-import { delay } from '~/utils/main'
 import type { HomeTab } from '~/stores/mainStore'
 import { useMainStore } from '~/stores/mainStore'
+import { delay } from '~/utils/main'
+import emitter from '~/utils/mitt'
+
+import type { GridLayoutIcon } from './types'
+import { HomeSubPage } from './types'
 
 const mainStore = useMainStore()
 const { handleBackToTop, scrollbarRef } = useBewlyApp()
-const { getBewlyImage } = useBewlyImage()
 
 const activatedPage = ref<HomeSubPage>(HomeSubPage.ForYou)
 const pages = {
@@ -28,9 +30,9 @@ const tabPageRef = ref()
 
 const gridLayoutIcons = computed((): GridLayoutIcon[] => {
   return [
-    { icon: 'f7:square-grid-3x2', iconActivated: 'f7:square-grid-3x2-fill', value: 'adaptive' },
-    { icon: 'f7:rectangle-grid-2x2', iconActivated: 'f7:rectangle-grid-2x2-fill', value: 'twoColumns' },
-    { icon: 'f7:rectangle-grid-1x2', iconActivated: 'f7:rectangle-grid-1x2-fill', value: 'oneColumn' },
+    { icon: 'i-f7:square-grid-3x2', iconActivated: 'i-f7:square-grid-3x2-fill', value: 'adaptive' },
+    { icon: 'i-f7:rectangle-grid-2x2', iconActivated: 'i-f7:rectangle-grid-2x2-fill', value: 'twoColumns' },
+    { icon: 'i-f7:rectangle-grid-1x2', iconActivated: 'i-f7:rectangle-grid-1x2-fill', value: 'oneColumn' },
   ]
 })
 
@@ -145,7 +147,7 @@ function toggleTabContentLoading(loading: boolean) {
           pos="absolute left-0 top-0" w-full h-inherit bg="cover center" z-1
           pointer-events-none
           :style="{
-            backgroundImage: `url('${getBewlyImage(settings.searchPageWallpaper)}')`,
+            backgroundImage: `url('${settings.searchPageWallpaper}')`,
             backgroundAttachment: settings.searchPageModeWallpaperFixed ? 'fixed' : 'unset',
           }"
         />
@@ -199,44 +201,47 @@ function toggleTabContentLoading(loading: boolean) {
         ease-in-out flex="~ justify-between items-start gap-4"
         :class="{ hide: shouldMoveTabsUp }"
       >
-        <ul flex="~ items-center gap-3 wrap">
-          <li
+        <section flex="~ items-center gap-3 wrap">
+          <button
             v-for="tab in currentTabs" :key="tab.page"
             :class="{ 'tab-activated': activatedPage === tab.page }"
             style="backdrop-filter: var(--bew-filter-glass-1)"
             px-4 lh-35px h-35px bg="$bew-elevated-1 hover:$bew-elevated-1-hover" rounded="$bew-radius"
             cursor-pointer shadow="$bew-shadow-1" box-border border="1 $bew-border-color" duration-300
-            flex="~ gap-2 items-center"
+            flex="~ gap-2 items-center" relative
             @click="handleChangeTab(tab)"
           >
             <span class="text-center">{{ $t(tab.i18nKey) }}</span>
-            <Icon
-              :style="{
-                opacity: activatedPage === tab.page && tabContentLoading ? 1 : 0,
-                margin: activatedPage === tab.page && tabContentLoading ? '0' : '-12px',
-              }"
-              icon="svg-spinners:ring-resize"
-              duration-300 ease-in-out mb--2px text-16px
-            />
-          </li>
-        </ul>
+
+            <Transition name="fade">
+              <div
+                v-show="activatedPage === tab.page && tabContentLoading"
+                i-svg-spinners:ring-resize
+                pos="absolute right-4px top-4px" duration-300
+                text="8px $bew-text-auto"
+              />
+            </Transition>
+          </button>
+        </section>
 
         <div
           style="backdrop-filter: var(--bew-filter-glass-1)"
-          flex="~ gap-1 shrink-0" p-1 h-35px bg="$bew-elevated-1"
+          flex="~ gap-1 shrink-0" p-1 h-35px bg="$bew-elevated-1" transform-gpu
           rounded="$bew-radius" shadow="$bew-shadow-1" box-border border="1 $bew-border-color"
         >
-          <Icon
+          <div
             v-for="icon in gridLayoutIcons" :key="icon.value"
-            :icon="homePageGridLayout === icon.value ? icon.iconActivated : icon.icon"
             :style="{
               backgroundColor: homePageGridLayout === icon.value ? 'var(--bew-theme-color-auto)' : '',
               color: homePageGridLayout === icon.value ? 'var(--bew-text-auto)' : 'unset',
             }"
+            flex="~ justify-center items-center"
             w-full
             h-full p="x-2 y-1" rounded="$bew-radius-half" bg="hover:$bew-fill-2" duration-300
             cursor-pointer @click="homePageGridLayout = icon.value"
-          />
+          >
+            <div :class="homePageGridLayout === icon.value ? icon.iconActivated : icon.icon" text-base />
+          </div>
         </div>
       </header>
 
@@ -251,7 +256,6 @@ function toggleTabContentLoading(loading: boolean) {
           />
         </KeepAlive>
       </Transition>
-      <!-- <RecommendContent :key="recommendContentKey" /> -->
     </main>
   </div>
 </template>
