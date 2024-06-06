@@ -164,14 +164,19 @@ function jumpToLoginPage() {
 }
 
 function handleUnfavorite(favoriteResource: FavoriteResource) {
-  api.favorite.patchDelFavoriteResources({
-    resources: `${favoriteResource.id}:${favoriteResource.type}`,
-    media_id: selectedCategory.value?.id,
-    csrf: getCSRF(),
-  }).then((res) => {
-    if (res.code === 0)
-      favoriteResources.splice(favoriteResources.indexOf(favoriteResource as FavoriteItem), 1)
-  })
+  const result = confirm(
+    t('favorites.unfavorite_confirm'),
+  )
+  if (result) {
+    api.favorite.patchDelFavoriteResources({
+      resources: `${favoriteResource.id}:${favoriteResource.type}`,
+      media_id: selectedCategory.value?.id,
+      csrf: getCSRF(),
+    }).then((res) => {
+      if (res.code === 0)
+        favoriteResources.splice(favoriteResources.indexOf(favoriteResource as FavoriteItem), 1)
+    })
+  }
 }
 
 function isMusic(item: FavoriteResource) {
@@ -347,7 +352,7 @@ function isMusic(item: FavoriteResource) {
   }
 
   &::-webkit-scrollbar-thumb {
-    background-color: rgba(255, 255, 255, .35);
+    background-color: rgba(255, 255, 255, 0.35);
     border-radius: 20px;
   }
 
@@ -356,4 +361,3 @@ function isMusic(item: FavoriteResource) {
   }
 }
 </style>
-~/components/TopBar/types

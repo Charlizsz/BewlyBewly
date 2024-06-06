@@ -1,14 +1,13 @@
 <script setup lang="ts">
 import { onKeyStroke } from '@vueuse/core'
 import type { Ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useToast } from 'vue-toastification'
 
 import Button from '~/components/Button.vue'
 import Dialog from '~/components/Dialog.vue'
 import Empty from '~/components/Empty.vue'
-import Loading from '~/components/Loading.vue'
 import VideoCard from '~/components/VideoCard/VideoCard.vue'
-import VideoCardSkeleton from '~/components/VideoCard/VideoCardSkeleton.vue'
 import { useApiClient } from '~/composables/api'
 import { useBewlyApp } from '~/composables/useAppProvider'
 import { LanguageType } from '~/enums/appEnums'
@@ -29,6 +28,19 @@ const emit = defineEmits<{
   (e: 'afterLoading'): void
 }>()
 
+const { t } = useI18n()
+
+// https://github.com/starknt/BewlyBewly/blob/fad999c2e482095dc3840bb291af53d15ff44130/src/contentScripts/views/Home/components/ForYou.vue#L16
+interface VideoElement {
+  uniqueId: string
+  item?: VideoItem
+}
+
+interface AppVideoElement {
+  uniqueId: string
+  item?: AppVideoItem
+}
+
 const gridValue = computed((): string => {
   if (props.gridLayout === 'adaptive')
     return '~ 2xl:cols-5 xl:cols-4 lg:cols-3 md:cols-2 gap-5'
@@ -39,9 +51,9 @@ const gridValue = computed((): string => {
 
 const toast = useToast()
 const api = useApiClient()
-const videoList = reactive<VideoItem[]>([])
-const appVideoList = reactive<AppVideoItem[]>([])
-const isLoading = ref<boolean>(true)
+const videoList = ref<VideoElement[]>([])
+const appVideoList = ref<AppVideoElement[]>([])
+const isLoading = ref<boolean>(false)
 const needToLoginFirst = ref<boolean>(false)
 const containerRef = ref<HTMLElement>() as Ref<HTMLElement>
 const refreshIdx = ref<number>(1)
@@ -112,18 +124,26 @@ onActivated(() => {
 })
 
 async function initData() {
-  videoList.length = 0
-  appVideoList.length = 0
+  videoList.value.length = 0
+  appVideoList.value.length = 0
   await getData()
 }
 
 async function getData() {
-  if (settings.value.recommendationMode === 'web') {
-    getRecommendVideos()
+  emit('beforeLoading')
+  isLoading.value = true
+  try {
+    if (settings.value.recommendationMode === 'web') {
+      await getRecommendVideos()
+    }
+    else {
+      for (let i = 0; i < 3; i++)
+        await getAppRecommendVideos()
+    }
   }
-  else {
-    for (let i = 0; i < 3; i++)
-      await getAppRecommendVideos()
+  finally {
+    isLoading.value = false
+    emit('afterLoading')
   }
 }
 
@@ -146,9 +166,14 @@ function initPageAction() {
 }
 
 async function getRecommendVideos() {
-  emit('beforeLoading')
-  isLoading.value = true
   try {
+    let i = 0
+    const pendingVideos: VideoElement[] = Array.from({ length: pageSize }, () => ({
+      uniqueId: `unique-id-${(videoList.value.length || 0) + i++})}`,
+    } satisfies VideoElement))
+    let lastVideoListLength = videoList.value.length
+    videoList.value.push(...pendingVideos)
+
     const response: forYouResult = await api.video.getRecommendVideos({
       fresh_idx: refreshIdx.value++,
       ps: pageSize,
@@ -167,34 +192,42 @@ async function getRecommendVideos() {
       })
 
       // when videoList has length property, it means it is the first time to load
-      if (!videoList.length) {
-        Object.assign(videoList, resData)
+      if (!videoList.value.length) {
+        videoList.value = resData.map(item => ({ uniqueId: `${item.id}`, item }))
       }
       else {
-        // else we concat the new data to the old data
-        Object.assign(videoList, videoList.concat(resData))
+        resData.forEach((item) => {
+          videoList.value[lastVideoListLength++] = {
+            uniqueId: `${item.id}`,
+            item,
+          }
+        })
       }
     }
     else if (response.code === 62011) {
       needToLoginFirst.value = true
     }
   }
-  finally {
-    isLoading.value = false
-    emit('afterLoading')
+  catch {
+    videoList.value = videoList.value.filter(video => video.item)
   }
 }
 
 async function getAppRecommendVideos() {
-  emit('beforeLoading')
-  isLoading.value = true
   try {
+    let i = 0
+    const pendingVideos: AppVideoElement[] = Array.from({ length: pageSize }, () => ({
+      uniqueId: `unique-id-${(appVideoList.value.length || 0) + i++})}`,
+    } satisfies AppVideoElement))
+    let lastVideoListLength = appVideoList.value.length
+    appVideoList.value.push(...pendingVideos)
+
     const response: AppForYouResult = await api.video.getAppRecommendVideos({
       access_key: accessKey.value,
       s_locale: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
       c_locate: settings.value.language === LanguageType.Mandarin_TW || settings.value.language === LanguageType.Cantonese ? 'zh-Hant_TW' : 'zh-Hans_CN',
       appkey: TVAppKey.appkey,
-      idx: appVideoList.length > 0 ? appVideoList[appVideoList.length - 1].idx : 1,
+      idx: appVideoList.value.length > 0 ? appVideoList.value[appVideoList.value.length - 1].item?.idx : 1,
     })
 
     if (response.code === 0) {
@@ -207,12 +240,16 @@ async function getAppRecommendVideos() {
       })
 
       // when videoList has length property, it means it is the first time to load
-      if (!appVideoList.length) {
-        Object.assign(appVideoList, resData)
+      if (!appVideoList.value.length) {
+        appVideoList.value = resData.map(item => ({ uniqueId: `${item.idx}`, item }))
       }
       else {
-        // else we concat the new data to the old data
-        Object.assign(appVideoList, appVideoList.concat(resData))
+        resData.forEach((item) => {
+          appVideoList.value[lastVideoListLength++] = {
+            uniqueId: `${item.idx}`,
+            item,
+          }
+        })
       }
     }
     else if (response.code === 62011) {
@@ -220,8 +257,9 @@ async function getAppRecommendVideos() {
     }
   }
   finally {
-    isLoading.value = false
-    emit('afterLoading')
+    // Since the video list in app recommendation mode will filter the ad cards,
+    // after loading, the video list will be filtered again to remove the empty cards
+    appVideoList.value = appVideoList.value.filter(video => video.item)
   }
 }
 
@@ -294,6 +332,11 @@ function closeDislikeDialog() {
 }
 
 function handleAppDislike() {
+  if (!accessKey.value) {
+    toast.warning(t('auth.auth_access_key_first'))
+    return
+  }
+
   loadingDislikeDialog.value = true
   const params = {
     access_key: accessKey.value,
@@ -358,7 +401,7 @@ function handleAppUndoDislike(video: AppVideoItem) {
   })
 }
 
-function getVideoUniqueKey(video: VideoItem) {
+function getVideoUniqueKey(video: VideoItem): string {
   return video.id + (video.bvid || video.uri || '')
 }
 
@@ -467,87 +510,74 @@ defineExpose({ initData })
       <template v-if="settings.recommendationMode === 'web'">
         <VideoCard
           v-for="video in videoList"
-          :key="video.id"
-          :skeleton="!video.title"
-          :video="{
-            id: video.id,
-            duration: video.duration,
-            title: video.title,
-            cover: video.pic,
-            author: video.owner.name,
-            authorFace: video.owner.face,
-            followed: !!video.is_followed,
-            mid: video.owner.mid,
-            view: video.stat.view,
-            danmaku: video.stat.danmaku,
-            publishedTimestamp: video.pubdate,
-            bvid: video.bvid,
-            cid: video.cid,
-            url: video.uri,
-          }"
+          :key="video.uniqueId"
+          :skeleton="!video.item"
+          :video="video.item ? {
+            id: video.item.id,
+            duration: video.item.duration,
+            title: video.item.title,
+            cover: video.item.pic,
+            author: video.item.owner.name,
+            authorFace: video.item.owner.face,
+            followed: !!video.item.is_followed,
+            mid: video.item.owner.mid,
+            view: video.item.stat.view,
+            danmaku: video.item.stat.danmaku,
+            publishedTimestamp: video.item.pubdate,
+            bvid: video.item.bvid,
+            cid: video.item.cid,
+          } : undefined"
           show-preview
           :horizontal="gridLayout !== 'adaptive'"
           more-btn
-          :more-btn-active="video.id === activatedVideoId"
-          :removed="dislikedVideoUniqueKeys.includes(getVideoUniqueKey(video))"
-          @more-click="(e) => handleMoreClick(e, video)"
-          @undo="handleUndoDislike(video)"
+          :more-btn-active="video.item && video.item.id === activatedVideoId"
+          :removed="video.item && dislikedVideoUniqueKeys.includes(getVideoUniqueKey(video.item))"
+          @more-click="(e) => handleMoreClick(e, video.item!)"
+          @undo="handleUndoDislike(video.item!)"
         />
       </template>
       <template v-else>
         <VideoCard
           v-for="video in appVideoList"
-          :key="video.args.aid"
+          :key="video.uniqueId"
           ref="videoCardRef"
-          :skeleton="!video"
-          :video="{
-            id: video.args.aid ?? 0,
-            durationStr: video.cover_right_text,
-            title: `${video.title}`,
-            cover: `${video.cover}`,
-            author: video?.mask?.avatar.text,
-            authorFace: video?.mask?.avatar.cover,
-            followed: video?.bottom_rcmd_reason === '已关注' || video?.bottom_rcmd_reason === '已關注',
-            mid: video?.mask?.avatar.up_id,
-            capsuleText: video?.desc?.split('·')[1],
-            bvid: video.bvid,
-            viewStr: video.cover_left_text_1,
-            danmakuStr: video.cover_left_text_2,
-            cid: video?.player_args?.cid,
-            url: video.uri,
-            type: video.card_goto === 'bangumi' ? 'bangumi' : isVerticalVideo(video.uri!) ? 'vertical' : 'horizontal',
-          }"
+          :skeleton="!video.item"
+          :video="video.item ? {
+            id: video.item.args.aid ?? 0,
+            durationStr: video.item.cover_right_text,
+            title: `${video.item.title}`,
+            cover: `${video.item.cover}`,
+            author: video.item?.mask?.avatar.text,
+            authorFace: video.item?.mask?.avatar.cover || video.item?.avatar?.cover,
+            followed: video.item?.bottom_rcmd_reason === '已关注' || video.item?.bottom_rcmd_reason === '已關注',
+            mid: video.item?.mask?.avatar.up_id,
+            capsuleText: video.item?.desc?.split('·')[1],
+            bvid: video.item.bvid,
+            viewStr: video.item.cover_left_text_1,
+            danmakuStr: video.item.cover_left_text_2,
+            cid: video.item?.player_args?.cid,
+            url: video.item?.goto === 'bangumi' ? video.item.uri : '',
+            type: video.item.card_goto === 'bangumi' ? 'bangumi' : isVerticalVideo(video.item.uri!) ? 'vertical' : 'horizontal',
+          } : undefined"
           show-preview
           :horizontal="gridLayout !== 'adaptive'"
           more-btn
-          :more-btn-active="video.idx === activatedAppVideoIdx"
-          :removed="dislikedAppVideoUniqueKeys.includes(getAppVideoUniqueKey(video))"
-          @more-click="(e) => handleAppMoreClick(e, video)"
-          @undo="handleAppUndoDislike(video)"
+          :more-btn-active="video.item && video.item.idx === activatedAppVideoIdx"
+          :removed="video.item && dislikedAppVideoUniqueKeys.includes(getAppVideoUniqueKey(video.item))"
+          @more-click="(e) => handleAppMoreClick(e, video.item!)"
+          @undo="handleAppUndoDislike(video.item!)"
         />
         <!-- :more-options="video.three_point_v2" -->
-      </template>
-
-      <!-- skeleton -->
-      <template v-if="isLoading">
-        <VideoCardSkeleton
-          v-for="item in 30" :key="item"
-          :horizontal="gridLayout !== 'adaptive'"
-        />
       </template>
     </div>
 
     <!-- no more content -->
     <Empty v-if="noMoreContent" class="pb-4" :description="$t('common.no_more_content')" />
-
-    <Transition name="fade">
-      <Loading v-if="isLoading" />
-    </Transition>
   </div>
 </template>
 
 <style lang="scss" scoped>
 .activated-dislike-reason {
-  --at-apply: bg-$bew-theme-color-20 color-$bew-theme-color;
+  --uno: "bg-$bew-theme-color-20 color-$bew-theme-color";
 }
 </style>

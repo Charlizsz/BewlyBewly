@@ -11,7 +11,7 @@ import { useApiClient } from '~/composables/api'
 import type { HistoryResult, List as HistoryItem } from '~/models/history/history'
 import { Business } from '~/models/history/history'
 import { calcCurrentTime } from '~/utils/dataFormatter'
-import { isHomePage, removeHttpFromUrl, smoothScrollToTop } from '~/utils/main'
+import { isHomePage, removeHttpFromUrl, scrollToTop } from '~/utils/main'
 
 const { t } = useI18n()
 const api = useApiClient()
@@ -49,7 +49,7 @@ watch(activatedTab, (newVal: number | undefined, oldVal: number | undefined) => 
 
   historys.length = 0
   if (historysWrap.value)
-    smoothScrollToTop(historysWrap.value, 300)
+    scrollToTop(historysWrap.value)
 
   if (newVal === 0) {
     getHistoryList(Business.ARCHIVE)
@@ -394,20 +394,20 @@ function getHistoryList(type: Business, view_at = 0 as number) {
 
 <style lang="scss" scoped>
 .tab {
-  --at-apply: relative text-$bew-text-2;
+  --uno: "relative text-$bew-text-2";
 
   &::after {
-    --at-apply: absolute bottom-0 left-0 w-full h-12px bg-$bew-theme-color
-      opacity-0 transform scale-x-0 -z-1 transition-all duration-300;
-    content: '';
+    --uno: "absolute bottom-0 left-0 w-full h-12px bg-$bew-theme-color opacity-0 transform scale-x-0 -z-1";
+    --uno: "transition-all duration-300";
+    content: "";
   }
 }
 
 .tab-selected {
-  --at-apply: font-bold text-$bew-text-1;
+  --uno: "font-bold text-$bew-text-1";
 
   &::after {
-    --at-apply: scale-x-80 opacity-40;
+    --uno: "scale-x-80 opacity-40";
   }
 }
 </style>

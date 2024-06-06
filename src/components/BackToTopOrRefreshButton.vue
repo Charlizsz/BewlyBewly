@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import Button from '~/components/Button.vue'
+import { Icon } from '@iconify/vue'
 
-defineProps<{ showRefreshButton: boolean }>()
-const emit = defineEmits(['refresh', 'back-to-top'])
+import Button from '~/components/Button.vue'
+import { useBewlyApp } from '~/composables/useAppProvider'
+
+const emit = defineEmits(['refresh', 'backToTop'])
+
+const { reachTop } = useBewlyApp()
 </script>
 
 <template>
@@ -24,14 +28,19 @@ const emit = defineEmits(['refresh', 'back-to-top'])
         backdrop-filter: var(--bew-filter-glass-1);
       "
       transform-gpu
-      @click="showRefreshButton ? emit('refresh') : emit('back-to-top')"
+      @click="reachTop ? emit('refresh') : emit('backToTop')"
     >
       <Transition name="fade">
-        <div
-          v-if="showRefreshButton" i-line-md:rotate-270 text-lg shrink-0 rotate-90
-          absolute
+        <Icon
+          v-if="reachTop"
+          icon="line-md:rotate-270"
+          shrink-0 rotate-90 absolute text-2xl
         />
-        <div v-else i-line-md:arrow-small-up text-lg shrink-0 absolute />
+        <Icon
+          v-else
+          icon="line-md:arrow-small-up"
+          shrink-0 absolute text-2xl
+        />
       </Transition>
     </Button>
   </div>
