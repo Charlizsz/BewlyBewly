@@ -426,6 +426,9 @@ defineExpose({
               v-show="showLogo"
               ref="logo" href="//www.bilibili.com"
               class="group logo"
+              :style="{
+                transform: popupVisible.channels ? `translateX(0)` : `translateX(calc(-1 * var(--bew-base-font-size)))`,
+              }"
               flex items-center border="1 transparent hover:$bew-border-color"
               rounded="50px" p="x-4" shadow="hover:$bew-shadow-2" duration-300
               bg="hover:$bew-theme-color dark-hover:white"
@@ -480,9 +483,12 @@ defineExpose({
         flex="inline xl:1 justify-center items-center"
       >
         <div
-          style="backdrop-filter: var(--bew-filter-glass-1)"
+          style="
+            backdrop-filter: var(--bew-filter-glass-1);
+            box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
+          "
           ml-auto flex h-55px p-2 bg="$bew-elevated-1"
-          text="$bew-text-1" border="1 $bew-border-color" rounded-full shadow="$bew-shadow-2"
+          text="$bew-text-1" border="1 $bew-border-color" rounded-full
           transform-gpu
         >
           <div v-if="!isLogin" class="right-side-item">
@@ -684,7 +690,7 @@ defineExpose({
                 </a>
 
                 <Transition name="slide-in">
-                  <WatchLaterPop v-if="popupVisible.watchLater" class="bew-popover" />
+                  <WatchLaterPop v-if="popupVisible.watchLater" class="bew-popover" ml--30px />
                 </Transition>
               </div>
 
@@ -723,23 +729,24 @@ defineExpose({
               <a
                 href="https://member.bilibili.com/platform/upload/video/frame"
                 target="_blank"
+                :title="$t('topbar.upload')"
                 bg="$bew-theme-color"
                 rounded-40px
                 un-text="!white !base"
                 mx-1
                 flex="~"
                 justify="center"
-                w="xl:100px 38px"
-                h="xl:auto 38px"
-                p="xl:auto x-4"
+                w="38px"
+                h="38px"
+                p="x-4"
                 shadow
                 filter="hover:brightness-110"
                 style="--un-shadow: 0 0 10px var(--bew-theme-color-60)"
               >
                 <div i-mingcute:upload-2-line flex-shrink-0 />
-                <span m="l-2" class="hidden xl:block">{{
+                <!-- <span m="l-2" class="hidden xl:block">{{
                   $t('topbar.upload')
-                }}</span>
+                }}</span> -->
               </a>
 
               <Transition name="slide-in">
@@ -848,7 +855,7 @@ defineExpose({
       --uno: "duration-300";
 
       &.hover {
-        --uno: "transform scale-230 important: translate-y-36px";
+        --uno: "transform scale-230 translate-y-36px";
       }
     }
 
