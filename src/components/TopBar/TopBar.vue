@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useMouseInElement } from '@vueuse/core'
 import type { Ref, UnwrapNestedRefs } from 'vue'
-import { onMounted, watch } from 'vue'
 
 import { useApiClient } from '~/composables/api'
 import { useBewlyApp } from '~/composables/useAppProvider'
@@ -100,6 +99,16 @@ function closeAllTopBarPopup(exceptionKey?: keyof typeof popupVisible) {
       popupVisible[key as keyof typeof popupVisible] = false
   })
 }
+
+const rightSideInactive = computed(() => {
+  let isInactive = false
+  Object.entries(popupVisible).forEach(([key, value]) => {
+    if (value && key !== 'userPanel') {
+      isInactive = true
+    }
+  })
+  return isInactive
+})
 
 // Channels
 const channels = useDelayedHover({
@@ -387,9 +396,9 @@ defineExpose({
       <div
         v-if="mask"
         style="
-          mask-image: linear-gradient(to bottom,  black 50%, transparent);
-          backdrop-filter: var(--bew-filter-glass-1);
+          mask-image: linear-gradient(to bottom,  black 20%, transparent);
         "
+        :style="{ backdropFilter: settings.disableFrostedGlass ? 'none' : 'blur(4px)' }"
         pos="absolute top-0 left-0" w-full h-80px
         pointer-events-none transform-gpu
       />
@@ -397,7 +406,7 @@ defineExpose({
         <div
           v-if="mask"
           pos="absolute top-0 left-0" w-full h-80px
-          pointer-events-none
+          pointer-events-none opacity-80
           :style="{
             background: `linear-gradient(to bottom, ${(
               settings.wallpaper
@@ -462,8 +471,8 @@ defineExpose({
           <SearchBar
             v-if="props.showSearchBar"
             style="
-              --b-search-bar-color: var(--bew-elevated-1);
-              --b-search-bar-hover: var(--bew-elevated-1-hover);
+              --b-search-bar-color: var(--bew-elevated);
+              --b-search-bar-hover: var(--bew-elevated-hover);
             "
           />
         </Transition>
@@ -472,14 +481,75 @@ defineExpose({
       <!-- right content -->
       <div
         class="right-side"
-        flex="inline xl:1 justify-center items-center"
+        flex="inline xl:1 justify-end items-center"
       >
+        <!-- Avatar -->
         <div
+          v-if="isLogin"
+          ref="avatar"
+          class="avatar right-side-item relative"
+          shadow="$bew-shadow-2" rounded-full
+        >
+          <a
+            ref="avatarImg"
+            :href="`https://space.bilibili.com/${mid}`"
+            :target="isHomePage() ? '_blank' : '_self'"
+            class="avatar-img"
+            :class="{ hover: popupVisible.userPanel }"
+            :style="{
+              backgroundImage: `url(${`${userInfo.face}`.replace(
+                'http:',
+                '',
+              )})`,
+            }"
+            rounded-full w-40px h-40px
+            shadow="$bew-shadow-2"
+            bg="$bew-fill-3 cover center"
+            z-1
+          />
+          <div
+            ref="avatarShadow"
+            class="avatar-shadow"
+            :class="{ hover: popupVisible.userPanel }"
+            :style="{
+              backgroundImage: `url(${`${userInfo.face}`.replace(
+                'http:',
+                '',
+              )})`,
+            }"
+            pos="absolute top-0" z-0 pointer-events-none
+            bg="cover center" blur-sm
+            rounded-full
+            w-40px h-40px
+          />
+          <svg
+            v-if="userInfo.vip?.status === 1"
+            class="vip-img"
+            :class="{ hover: popupVisible.userPanel }"
+            :style="{ opacity: popupVisible.userPanel ? 1 : 0 }"
+            bg="[url(https://i0.hdslb.com/bfs/seed/jinkela/short/user-avatar/big-vip.svg)] cover no-repeat"
+            w="27.5%" h="27.5%" z-1
+            pos="absolute bottom-0 right-0" duration-300
+          />
+          <Transition name="slide-in">
+            <UserPanelPop
+              v-if="popupVisible.userPanel"
+              :user-info="userInfo"
+              after:h="!0"
+              class="bew-popover"
+            />
+          </Transition>
+        </div>
+
+        <div
+          class="others"
+          :class="{ inactive: rightSideInactive }"
           style="
             backdrop-filter: var(--bew-filter-glass-1);
             box-shadow: var(--bew-shadow-edge-glow-1), var(--bew-shadow-2);
           "
-          ml-auto flex h-55px p-2 bg="$bew-elevated-1"
+          flex h-50px px-6px bg="$bew-elevated"
+          transition="transition-property-colors duration-150"
           text="$bew-text-1" border="1 $bew-border-color" rounded-full
           transform-gpu
         >
@@ -491,58 +561,6 @@ defineExpose({
             </a>
           </div>
           <template v-if="isLogin">
-            <!-- Avatar -->
-            <div
-              ref="avatar"
-              class="avatar right-side-item"
-            >
-              <a
-                ref="avatarImg"
-                :href="`https://space.bilibili.com/${mid}`"
-                :target="isHomePage() ? '_blank' : '_self'"
-                class="avatar-img"
-                :class="{ hover: popupVisible.userPanel }"
-                rounded-full
-                z-1
-                w-38px
-                h-38px
-                bg="$bew-fill-3 cover center"
-                :style="{
-                  backgroundImage: `url(${`${userInfo.face}`.replace(
-                    'http:',
-                    '',
-                  )})`,
-                }"
-              />
-              <div
-                ref="avatarShadow"
-                class="avatar-shadow"
-                :class="{ hover: popupVisible.userPanel }"
-                pos="absolute top-0"
-                bg="cover center"
-                blur-sm
-                opacity="60"
-                rounded-full
-                z-0
-                w-38px
-                h-38px
-                :style="{
-                  backgroundImage: `url(${`${userInfo.face}`.replace(
-                    'http:',
-                    '',
-                  )})`,
-                }"
-              />
-              <Transition name="slide-in">
-                <UserPanelPop
-                  v-if="popupVisible.userPanel"
-                  :user-info="userInfo"
-                  after:h="!0"
-                  class="bew-popover"
-                />
-              </Transition>
-            </div>
-
             <!-- TODO: need to refactor to this -->
             <!-- <div display="lg:flex none">
               <div v-for="item in topBarItems" :key="item.i18nKey" class="right-side-item">
@@ -569,13 +587,13 @@ defineExpose({
                 <template v-if="unReadMessageCount > 0">
                   <div
                     v-if="settings.topBarIconBadges === 'number'"
-                    class="unread-message"
+                    class="unread-num-dot"
                   >
                     {{ unReadMessageCount > 99 ? '99+' : unReadMessageCount }}
                   </div>
                   <div
                     v-else-if="settings.topBarIconBadges === 'dot'"
-                    w-8px h-8px bg="$bew-theme-color" rounded-8px pos="absolute right-0 top-0"
+                    class="unread-dot"
                   />
                 </template>
                 <a
@@ -603,13 +621,13 @@ defineExpose({
                 <template v-if="newMomentsCount > 0">
                   <div
                     v-if="settings.topBarIconBadges === 'number'"
-                    class="unread-message"
+                    class="unread-num-dot"
                   >
                     {{ newMomentsCount > 99 ? '99+' : newMomentsCount }}
                   </div>
                   <div
                     v-else-if="settings.topBarIconBadges === 'dot'"
-                    w-8px h-8px bg="$bew-theme-color" rounded-8px pos="absolute right-0 top-0"
+                    class="unread-dot"
                   />
                 </template>
                 <a
@@ -727,12 +745,8 @@ defineExpose({
                 bg="$bew-theme-color"
                 rounded-40px
                 un-text="!white !base"
-                mx-1
-                flex="~"
-                justify="center"
-                w="38px"
-                h="38px"
-                p="x-4"
+                w-35px h-35px ml-1
+                flex="~ justify-center"
                 shadow
                 filter="hover:brightness-110"
                 style="--un-shadow: 0 0 10px var(--bew-theme-color-60)"
@@ -813,36 +827,8 @@ defineExpose({
 }
 
 .right-side {
-  .unread-message {
-    --uno: "absolute -top-1 right-0";
-    --uno: "important:px-1 important:py-2 rounded-full";
-    --uno: "text-xs leading-0 z-1 min-w-16px h-16px";
-    --uno: "flex justify-center items-center";
-    --uno: "bg-$bew-theme-color  text-white";
-    box-shadow: 0 2px 4px rgba(var(--tw-shadow-color), 0.4);
-  }
-
-  .right-side-item {
-    --uno: "relative text-$bew-text-1 flex items-center";
-
-    &:not(.avatar) a {
-      --uno: "text-xl flex items-center p-2 rounded-40px duration-300 relative z-5";
-    }
-
-    &.active a,
-    &:not(.upload) a:hover {
-      --un-drop-shadow: drop-shadow(0 0 6px white);
-      --uno: "bg-$bew-fill-2";
-    }
-  }
-
-  .right-side-item .login {
-    --un-drop-shadow: drop-shadow(0 0 6px var(--bew-theme-color));
-    --uno: "rounded-full mx-1 important:text-$bew-theme-color important:px-4 hover:important-bg-$bew-theme-color hover:important-text-white flex items-center justify-center important:text-base w-120px border-solid border-$bew-theme-color border-2 important:dark:filter";
-  }
-
   .avatar {
-    --uno: "flex items-center ml-2px pr-2 relative z-1";
+    --uno: "flex items-center mr-4 relative z-1";
 
     .avatar-img,
     .avatar-shadow {
@@ -854,8 +840,56 @@ defineExpose({
     }
 
     .avatar-shadow {
-      --uno: "pointer-events-none";
+      --uno: "opacity-0";
+
+      &.hover {
+        --uno: "opacity-60";
+      }
     }
+
+    .vip-img {
+      &.hover {
+        --uno: "transform scale-180 translate-y-55px translate-15px";
+      }
+    }
+  }
+
+  .others.inactive,
+  .others:hover {
+    --uno: "important-backdrop-filter-none important-bg-$bew-elevated-solid";
+  }
+
+  .unread-num-dot {
+    --uno: "absolute top-4px right--4px";
+    --uno: "important:px-1 important:py-2 rounded-full";
+    --uno: "text-xs leading-0 z-3 min-w-14px h-14px";
+    --uno: "flex justify-center items-center";
+    --uno: "bg-$bew-theme-color  text-white";
+    box-shadow: 0 2px 4px rgba(var(--tw-shadow-color), 0.4);
+  }
+
+  .unread-dot {
+    --uno: "w-8px h-8px bg-$bew-theme-color rounded-8px absolute right-0 top-4px";
+  }
+
+  .right-side-item {
+    --uno: "relative text-$bew-text-1 flex items-center";
+
+    &:not(.avatar) a {
+      --uno: "text-xl flex items-center p-2 rounded-40px duration-300 relative z-5";
+      --uno: "h-35px h-35px";
+    }
+
+    &.active a,
+    &:not(.upload) a:hover {
+      --un-drop-shadow: drop-shadow(0 0 6px white);
+      --uno: "bg-$bew-fill-2 shadow-[var(--bew-shadow-edge-glow-1),var(--bew-shadow-1)]";
+    }
+  }
+
+  .right-side-item .login {
+    --un-drop-shadow: drop-shadow(0 0 6px var(--bew-theme-color));
+    --uno: "rounded-full mx-1 important:text-$bew-theme-color important:px-4 hover:important-bg-$bew-theme-color hover:important-text-white flex items-center justify-center important:text-base w-120px border-solid border-$bew-theme-color border-2 important:dark:filter";
   }
 }
 </style>

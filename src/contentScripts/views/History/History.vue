@@ -21,7 +21,7 @@ const historyList = reactive<Array<HistoryItem>>([])
 const currentPageNum = ref<number>(1)
 const keyword = ref<string>()
 const historyStatus = ref<boolean>()
-const { handlePageRefresh, handleReachBottom } = useBewlyApp()
+const { handlePageRefresh, handleReachBottom, haveScrollbar } = useBewlyApp()
 
 const HistoryBusiness = computed(() => {
   return Business
@@ -79,6 +79,10 @@ function getHistoryList() {
         }
 
         noMoreContent.value = false
+
+        if (!haveScrollbar() && !noMoreContent.value) {
+          getHistoryList()
+        }
       }
       isLoading.value = false
     })
@@ -292,7 +296,7 @@ function jumpToLoginPage() {
             <!-- Cover -->
             <div
               pos="relative"
-              bg="$bew-fill-4"
+              bg="$bew-skeleton"
               w="full md:full lg:250px"
               flex="shrink-0"
               rounded="$bew-radius"
@@ -420,12 +424,30 @@ function jumpToLoginPage() {
                     Live
                   </span>
                 </a>
-                <p display="block xl:none" text="$bew-text-3 sm" mt-auto mb-2>
-                  {{
-                    useDateFormat(historyItem.view_at * 1000, 'YYYY-MM-DD HH:mm:ss')
-                      .value
-                  }}
-                </p>
+                <div
+                  display="xl:none"
+                  flex items-center
+                  text="$bew-text-3 sm"
+                  mt-auto
+                >
+                  <span text-xl mr-2 lh-0>
+                    <i
+                      v-if="historyItem.history.dt === 1 || historyItem.history.dt === 3 || historyItem.history.dt === 5 || historyItem.history.dt === 7"
+                      i-mingcute:cellphone-line
+                    />
+                    <i v-if="historyItem.history.dt === 2" i-mingcute:tv-1-line />
+                    <i
+                      v-if="historyItem.history.dt === 4 || historyItem.history.dt === 6" i-mingcute:pad-line
+                    />
+                    <i v-if="historyItem.history.dt === 33" i-mingcute:tv-2-line />
+                  </span>
+                  <span>
+                    {{
+                      useDateFormat(historyItem.view_at * 1000, 'YYYY-MM-DD HH:mm:ss')
+                        .value
+                    }}
+                  </span>
+                </div>
               </div>
 
               <button
@@ -464,7 +486,7 @@ function jumpToLoginPage() {
           p="x-14px"
           lh-35px h-35px
           rounded="$bew-radius"
-          bg="$bew-content-solid-1"
+          bg="$bew-content-solid"
           shadow="$bew-shadow-1"
           outline-none
           w-full

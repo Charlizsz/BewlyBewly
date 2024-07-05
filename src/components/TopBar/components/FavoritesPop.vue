@@ -95,13 +95,14 @@ function getFavoriteResources() {
     keyword: '',
   })
     .then((res) => {
-      if (res.code === 0) {
-        if (Array.isArray(res.data.medias) && res.data.medias.length > 0)
-          favoriteResources.push(...res.data.medias)
+      const { code, data } = res
+      if (code === 0) {
+        if ('medias' in data && Array.isArray(data.medias) && data.medias.length > 0)
+          favoriteResources.push(...data.medias)
 
         if (
-          res.data.medias === null
-          || (res.data.medias.length < 20 && favoriteResources.length > 0)
+          !data.medias
+          || (data.medias.length < 20 && favoriteResources.length > 0)
         ) {
           isLoading.value = false
           noMoreContent.value = true
@@ -136,12 +137,14 @@ defineExpose({
 
 <template>
   <div
-    bg="$bew-elevated-solid-1"
-    w="500px"
+    style="backdrop-filter: var(--bew-filter-glass-1);"
+    bg="$bew-elevated"
+    w="450px"
     h="430px"
     rounded="$bew-radius"
     pos="relative"
-    style="box-shadow: var(--bew-shadow-2)"
+    shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
+    border="1 $bew-border-color"
   >
     <!-- top bar -->
     <header
@@ -151,7 +154,7 @@ defineExpose({
       pos="fixed top-0 left-0"
       w="full"
       h-50px
-      bg="$bew-content-1"
+      bg="$bew-content"
       z="2"
       un-border="!rounded-t-$bew-radius"
     >
@@ -209,7 +212,7 @@ defineExpose({
         <Loading
           v-if="isLoading && favoriteResources.length === 0"
           pos="absolute left-0"
-          bg="$bew-content-1"
+          bg="$bew-content"
           z="1"
           w="full"
           h="full"
@@ -221,8 +224,8 @@ defineExpose({
         <!-- empty -->
         <Empty
           v-if="!isLoading && favoriteResources.length === 0"
-          w="full"
-          h="full"
+          w="full" h="full"
+          rounded="$bew-radius-half"
         />
 
         <!-- historys -->
@@ -240,15 +243,15 @@ defineExpose({
           >
             <section flex="~ gap-4" item-start>
               <div
-                bg="$bew-fill-1"
-                w="150px"
+                bg="$bew-skeleton"
+                w="120px"
                 flex="shrink-0"
                 rounded="$bew-radius-half"
                 overflow="hidden"
               >
                 <div pos="relative">
                   <img
-                    w="150px"
+                    w="120px"
                     class="aspect-video"
                     :src="`${removeHttpFromUrl(item.cover)}@256w_144h_1c`"
                     :alt="item.title"
@@ -276,7 +279,7 @@ defineExpose({
                 </h3>
                 <div
                   text="$bew-text-2 sm"
-                  m="t-4"
+                  m="t-2"
                   flex="~"
                   items-center
                 >
