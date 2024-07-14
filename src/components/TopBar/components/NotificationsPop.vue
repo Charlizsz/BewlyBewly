@@ -11,31 +11,31 @@ const list = reactive([
     name: t('topbar.noti_dropdown.replys'),
     url: 'https://message.bilibili.com/#/reply',
     unreadCount: 0,
-    icon: 'i-mingcute:chat-3-line',
+    icon: 'i-solar:reply-2-bold-duotone',
   },
   {
     name: t('topbar.noti_dropdown.mentions'),
     url: 'https://message.bilibili.com/#/at',
     unreadCount: 0,
-    icon: 'i-mingcute:at-line',
+    icon: 'i-solar:mention-circle-bold-duotone',
   },
   {
     name: t('topbar.noti_dropdown.likes'),
     url: 'https://message.bilibili.com/#/love',
     unreadCount: 0,
-    icon: 'i-mingcute:thumb-up-2-line',
+    icon: 'i-solar:like-bold-duotone',
   },
   {
     name: t('topbar.noti_dropdown.messages'),
     url: 'https://message.bilibili.com/#/system',
     unreadCount: 0,
-    icon: 'i-mingcute:mail-line',
+    icon: 'i-solar:chat-line-bold-duotone',
   },
   {
     name: t('topbar.noti_dropdown.chats'),
     url: 'https://message.bilibili.com/#/whisper',
     unreadCount: 0,
-    icon: 'i-mingcute:message-3-line',
+    icon: 'i-solar:chat-round-bold-duotone',
   },
 ],
 )
@@ -75,7 +75,7 @@ function getUnreadMessageCount() {
   <div
     style="backdrop-filter: var(--bew-filter-glass-1);"
     bg="$bew-elevated"
-    w="170px"
+    w="180px"
     p="4"
     rounded="$bew-radius"
     shadow="[var(--bew-shadow-edge-glow-1),var(--bew-shadow-3)]"
@@ -88,25 +88,26 @@ function getUnreadMessageCount() {
       :href="item.url"
       :target="isHomePage() ? '_blank' : '_self'"
       pos="relative"
+      flex="~ items-center justify-between gap-2"
       p="x-4 y-2"
       bg="hover:$bew-fill-2"
       rounded="$bew-radius"
       transition="all duration-300"
       m="b-1 last:b-0"
-      flex="~"
-      items="center"
-      h="35px"
     >
-      <i :class="item.icon" />
-      <span class="flex-1 ml-2 mr-1">{{ item.name }}</span>
+      <div flex="~ items-center gap-2">
+        <i :class="item.icon" text="$bew-text-2" />
+        <span class="flex-1 ml-2 mr-1">{{ item.name }}</span>
+      </div>
       <template v-if="item.unreadCount > 0">
         <div
           bg="$bew-theme-color"
-          rounded="full"
+          rounded="$bew-radius"
           text="white xs leading-none center"
-          p="1"
-          min-w="21px"
-          min-h="21px"
+          grid="~ place-items-center"
+          px-1
+          min-w="14px"
+          h="14px"
         >
           {{ item.unreadCount > 99 ? '99+' : item.unreadCount }}
         </div>
